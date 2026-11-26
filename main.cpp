@@ -1,45 +1,59 @@
-#include "common.hpp"
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cstring>
+using namespace std;
 
-void runMenu(const string& title, const vector<string>& options, void (*handler)(int)) {
-    while (true) {
-        printLine(title);
-        for (size_t i = 0; i < options.size(); i++) cout << i + 1 << ". " << options[i] << "\n";
-        cout << "0. Back\n";
-        int choice = readInt("Enter choice: ", 0, (int)options.size());
-        if (choice == 0) return;
-        try {
-            handler(choice);
-        } catch (const NotFoundException& e) {
-            cout << "Not found: " << e.what() << "\n";
-        } catch (const ValidationException& e) {
-            cout << "Invalid: " << e.what() << "\n";
-        } catch (const FileException& e) {
-            cout << "File error: " << e.what() << "\n";
-        } catch (const AppException& e) {
-            cout << "Error: " << e.what() << "\n";
-        } catch (const exception& e) {
-            cout << "Unexpected error: " << e.what() << "\n";
-        }
+class Loc {
+public:
+    int id;
+    string nm, tp;
+    void show() {
+        cout << id << " | " << nm << " | " << tp << "\n";
     }
+};
+
+Loc locs[50];
+int lc = 0;
+
+int findLoc(int id) {
+    for (int i = 0; i < lc; i++)
+        if (locs[i].id == id) return i;
+    return -1;
 }
 
-void handleMain(int choice) {
-    if (choice == 1) {
-        Date d = readDate("Enter a date (YYYY-MM-DD or YYYY-MM-DD HH:MM): ");
-        int days = today() - d;
-        if (days < 0) cout << "That date is in the future.\n";
-        else cout << d.toString() << " was " << days << " day(s) ago.\n";
-    }
+void addLoc() {
+    if (lc >= 50) throw "Location limit reached";
+    Loc x;
+    cout << "Loc ID: ";
+    if (!(cin >> x.id)) { cin.clear(); cin.ignore(1000, '\n'); throw "Invalid ID"; }
+    cin.ignore(1000, '\n');
+    if (x.id <= 0 || findLoc(x.id) != -1) throw "Invalid or duplicate ID";
+    cout << "Name: "; getline(cin, x.nm);
+    cout << "Type (Building/Hall/Desk): "; getline(cin, x.tp);
+    if (x.nm.empty() || x.tp.empty()) throw "Empty field not allowed";
+    locs[lc++] = x;
+    cout << "Location added.\n";
+}
+
+void viewLocs() {
+    if (lc == 0) { cout << "No locations.\n"; return; }
+    for (int i = 0; i < lc; i++) locs[i].show();
 }
 
 int main() {
-    cout << "LOST AND FOUND PROPERTY REGISTRATION AND TRACKING SYSTEM\n";
-    try {
-        runMenu("MAIN MENU", {"Check a date"}, handleMain);
-        cout << "Goodbye.\n";
-    } catch (const exception& e) {
-        cout << "Program stopped: " << e.what() << "\n";
-        return 1;
-    }
+    int ch;
+    do {
+        cout << "\n--- LOST & FOUND SYSTEM ---\n";
+        cout << "1. Add Location\n2. View Locations\n0. Exit\nChoice: ";
+        try {
+            if (!(cin >> ch)) { cin.clear(); cin.ignore(1000, '\n'); throw "Invalid choice"; }
+            if (ch == 1) addLoc();
+            else if (ch == 2) viewLocs();
+            else if (ch != 0) cout << "Wrong option.\n";
+        } catch (const char* e) {
+            cout << "Error: " << e << "\n";
+        }
+    } while (ch != 0);
     return 0;
 }
